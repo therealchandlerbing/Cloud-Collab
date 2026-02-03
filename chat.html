@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud-Collab Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --chandler-color: #4A90D9;
+            --cloud-color: #9B59B6;
+            --background: #1a1a2e;
+            --surface: #16213e;
+            --surface-light: #1f3460;
+            --text: #eaeaea;
+            --text-muted: #a0a0a0;
+            --accent: #f39c12;
+            --success: #27ae60;
+            --border: #2a3f5f;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .user-selector {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .user-selector label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .user-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .user-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .user-btn.chandler {
+            background: rgba(74, 144, 217, 0.2);
+            color: var(--chandler-color);
+        }
+
+        .user-btn.chandler.active,
+        .user-btn.chandler:hover {
+            background: var(--chandler-color);
+            color: white;
+        }
+
+        .user-btn.cloud {
+            background: rgba(155, 89, 182, 0.2);
+            color: var(--cloud-color);
+        }
+
+        .user-btn.cloud.active,
+        .user-btn.cloud:hover {
+            background: var(--cloud-color);
+            color: white;
+        }
+
+        .sidebar-section {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-section h3 {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-btn {
+            padding: 10px 12px;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-btn:hover {
+            background: var(--surface-light);
+        }
+
+        .filter-btn.active {
+            background: var(--surface-light);
+            color: var(--accent);
+        }
+
+        .filter-btn .count {
+            margin-left: auto;
+            background: var(--surface-light);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+
+        .filter-btn.active .count {
+            background: var(--accent);
+            color: var(--background);
+        }
+
+        /* Saved Chats */
+        .saved-chats {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .saved-chat-item {
+            padding: 12px;
+            background: var(--surface-light);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .saved-chat-item:hover {
+            background: var(--border);
+        }
+
+        .saved-chat-item h4 {
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .saved-chat-item p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .saved-chat-item .delete-saved {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .saved-chat-item .delete-saved:hover {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+
+        /* Main Chat Area */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 15px 25px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h2 {
+            font-size: 1.1rem;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover {
+            background: var(--border);
+        }
+
+        .action-btn.primary {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .action-btn.primary:hover {
+            background: #219a52;
+        }
+
+        /* Messages */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 25px;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.hidden {
+            display: none;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .message.chandler .message-avatar {
+            background: var(--chandler-color);
+        }
+
+        .message.cloud .message-avatar {
+            background: var(--cloud-color);
+        }
+
+        .message-content {
+            margin-left: 12px;
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .message-author {
+            font-weight: 600;
+        }
+
+        .message.chandler .message-author {
+            color: var(--chandler-color);
+        }
+
+        .message.cloud .message-author {
+            color: var(--cloud-color);
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .message-text {
+            background: var(--surface);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border-top-left-radius: 4px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .message-actions {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .message-text:hover .message-actions {
+            opacity: 1;
+        }
+
+        .msg-action-btn {
+            background: var(--surface-light);
+            border: none;
+            color: var(--text-muted);
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .msg-action-btn:hover {
+            color: var(--text);
+            background: var(--border);
+        }
+
+        .msg-action-btn.flagged {
+            color: var(--accent);
+        }
+
+        .message.flagged .message-text {
+            border-left: 3px solid var(--accent);
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px 25px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-field {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-field textarea {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 0.95rem;
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+            font-family: inherit;
+        }
+
+        .input-field textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .input-field textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            padding: 14px 24px;
+            background: var(--accent);
+            border: none;
+            border-radius: 12px;
+            color: var(--background);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #e67e22;
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 25px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal h3 {
+            margin-bottom: 15px;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            margin-bottom: 15px;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: -280px;
+                height: 100%;
+                z-index: 100;
+                transition: left 0.3s;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .chat-header {
+                padding-left: 60px;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+                position: absolute;
+                left: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                color: var(--text);
+                font-size: 1.5rem;
+                cursor: pointer;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1>Cloud-Collab</h1>
+            <p>Designer + Developer Chat</p>
+        </div>
+
+        <div class="user-selector">
+            <label>You are chatting as:</label>
+            <div class="user-buttons">
+                <button class="user-btn chandler active" onclick="setUser('chandler')">Chandler</button>
+                <button class="user-btn cloud" onclick="setUser('cloud')">Cloud</button>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Filter Messages</h3>
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="setFilter('all')">
+                    <span>All Messages</span>
+                    <span class="count" id="all-count">0</span>
+                </button>
+                <button class="filter-btn" onclick="setFilter('flagged')">
+                    <span>Flagged Items</span>
+                    <span class="count" id="flagged-count">0</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Saved Chats</h3>
+        </div>
+        <div class="saved-chats" id="saved-chats">
+            <div class="empty-state" id="no-saved">
+                <p>No saved chats yet</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Chat -->
+    <main class="main-chat">
+        <header class="chat-header">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()">&#9776;</button>
+            <h2>Collaboration Chat</h2>
+            <div class="chat-actions">
+                <button class="action-btn" onclick="clearChat()">Clear Chat</button>
+                <button class="action-btn primary" onclick="openSaveModal()">Save Chat</button>
+            </div>
+        </header>
+
+        <div class="messages-container" id="messages">
+            <div class="empty-state" id="empty-chat">
+                <h3>Start the conversation!</h3>
+                <p>Share ideas, ask questions, and collaborate together.</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <div class="input-field">
+                    <textarea
+                        id="message-input"
+                        placeholder="Type your message..."
+                        rows="1"
+                        onkeydown="handleKeydown(event)"
+                    ></textarea>
+                </div>
+                <button class="send-btn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Save Modal -->
+    <div class="modal-overlay" id="save-modal">
+        <div class="modal">
+            <h3>Save This Chat</h3>
+            <input type="text" id="chat-name" placeholder="Enter a name for this chat...">
+            <div class="modal-actions">
+                <button class="action-btn" onclick="closeSaveModal()">Cancel</button>
+                <button class="action-btn primary" onclick="saveChat()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentUser = 'chandler';
+        let currentFilter = 'all';
+        let messages = [];
+        let savedChats = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            renderMessages();
+            renderSavedChats();
+            updateCounts();
+        });
+
+        // User Management
+        function setUser(user) {
+            currentUser = user;
+            document.querySelectorAll('.user-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.user-btn.${user}`).classList.add('active');
+        }
+
+        // Filter Management
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.filter-btn').classList.add('active');
+            renderMessages();
+        }
+
+        // Message Functions
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            const message = {
+                id: Date.now(),
+                user: currentUser,
+                text: text,
+                timestamp: new Date().toISOString(),
+                flagged: false
+            };
+
+            messages.push(message);
+            input.value = '';
+            input.style.height = 'auto';
+
+            saveToStorage();
+            renderMessages();
+            updateCounts();
+
+            // Scroll to bottom
+            const container = document.getElementById('messages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function toggleFlag(id) {
+            const message = messages.find(m => m.id === id);
+            if (message) {
+                message.flagged = !message.flagged;
+                saveToStorage();
+                renderMessages();
+                updateCounts();
+            }
+        }
+
+        function deleteMessage(id) {
+            messages = messages.filter(m => m.id !== id);
+            saveToStorage();
+            renderMessages();
+            updateCounts();
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messages');
+            const emptyState = document.getElementById('empty-chat');
+
+            let filteredMessages = messages;
+            if (currentFilter === 'flagged') {
+                filteredMessages = messages.filter(m => m.flagged);
+            }
+
+            if (messages.length === 0) {
+                emptyState.style.display = 'block';
+                container.innerHTML = '';
+                container.appendChild(emptyState);
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            const html = filteredMessages.map(msg => {
+                const date = new Date(msg.timestamp);
+                const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const dateStr = date.toLocaleDateString();
+                const initial = msg.user === 'chandler' ? 'C' : 'CL';
+                const displayName = msg.user === 'chandler' ? 'Chandler' : 'Cloud';
+
+                return `
+                    <div class="message ${msg.user} ${msg.flagged ? 'flagged' : ''}">
+                        <div class="message-avatar">${initial}</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">${displayName}</span>
+                                <span class="message-time">${dateStr} ${timeStr}</span>
+                            </div>
+                            <div class="message-text">
+                                ${escapeHtml(msg.text)}
+                                <div class="message-actions">
+                                    <button class="msg-action-btn ${msg.flagged ? 'flagged' : ''}" onclick="toggleFlag(${msg.id})" title="Flag for discussion">
+                                        ${msg.flagged ? '&#9733;' : '&#9734;'}
+                                    </button>
+                                    <button class="msg-action-btn" onclick="deleteMessage(${msg.id})" title="Delete">
+                                        &#128465;
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+
+            if (filteredMessages.length === 0 && currentFilter === 'flagged') {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No flagged items</h3>
+                        <p>Star messages to mark them for discussion.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Save/Load Chat Functions
+        function openSaveModal() {
+            document.getElementById('save-modal').classList.add('active');
+            document.getElementById('chat-name').focus();
+        }
+
+        function closeSaveModal() {
+            document.getElementById('save-modal').classList.remove('active');
+            document.getElementById('chat-name').value = '';
+        }
+
+        function saveChat() {
+            const name = document.getElementById('chat-name').value.trim();
+            if (!name || messages.length === 0) return;
+
+            const savedChat = {
+                id: Date.now(),
+                name: name,
+                messages: [...messages],
+                savedAt: new Date().toISOString()
+            };
+
+            savedChats.push(savedChat);
+            saveToStorage();
+            renderSavedChats();
+            closeSaveModal();
+        }
+
+        function loadSavedChat(id) {
+            const chat = savedChats.find(c => c.id === id);
+            if (chat) {
+                messages = [...chat.messages];
+                saveToStorage();
+                renderMessages();
+                updateCounts();
+            }
+        }
+
+        function deleteSavedChat(id, event) {
+            event.stopPropagation();
+            savedChats = savedChats.filter(c => c.id !== id);
+            saveToStorage();
+            renderSavedChats();
+        }
+
+        function renderSavedChats() {
+            const container = document.getElementById('saved-chats');
+            const noSaved = document.getElementById('no-saved');
+
+            if (savedChats.length === 0) {
+                container.innerHTML = '';
+                container.appendChild(noSaved);
+                noSaved.style.display = 'block';
+                return;
+            }
+
+            noSaved.style.display = 'none';
+
+            const html = savedChats.map(chat => {
+                const date = new Date(chat.savedAt);
+                const dateStr = date.toLocaleDateString();
+                const msgCount = chat.messages.length;
+
+                return `
+                    <div class="saved-chat-item" onclick="loadSavedChat(${chat.id})">
+                        <button class="delete-saved" onclick="deleteSavedChat(${chat.id}, event)">&#10005;</button>
+                        <h4>${escapeHtml(chat.name)}</h4>
+                        <p>${msgCount} messages - Saved ${dateStr}</p>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        function clearChat() {
+            if (messages.length === 0) return;
+            if (confirm('Clear all messages? Make sure to save first if needed.')) {
+                messages = [];
+                saveToStorage();
+                renderMessages();
+                updateCounts();
+            }
+        }
+
+        // Utility Functions
+        function updateCounts() {
+            document.getElementById('all-count').textContent = messages.length;
+            document.getElementById('flagged-count').textContent = messages.filter(m => m.flagged).length;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML.replace(/\n/g, '<br>');
+        }
+
+        function handleKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Auto-resize textarea
+        document.getElementById('message-input').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        // Storage Functions
+        function saveToStorage() {
+            localStorage.setItem('cloudcollab-messages', JSON.stringify(messages));
+            localStorage.setItem('cloudcollab-saved', JSON.stringify(savedChats));
+        }
+
+        function loadFromStorage() {
+            const storedMessages = localStorage.getItem('cloudcollab-messages');
+            const storedSaved = localStorage.getItem('cloudcollab-saved');
+
+            if (storedMessages) {
+                messages = JSON.parse(storedMessages);
+            }
+            if (storedSaved) {
+                savedChats = JSON.parse(storedSaved);
+            }
+        }
+
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // Close sidebar when clicking outside on mobile
+        document.querySelector('.main-chat').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('open');
+        });
+    </script>
+</body>
+</html>
