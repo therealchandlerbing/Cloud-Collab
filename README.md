@@ -62,6 +62,12 @@ When design vision meets technical constraints:
 
 ---
 
+## Live App
+
+Access the collaboration chat at: **[cloud-collab.vercel.app](https://cloud-collab.vercel.app)**
+
+---
+
 ## Using the Chat Interface
 
 - **Send messages** to discuss ideas in real-time
